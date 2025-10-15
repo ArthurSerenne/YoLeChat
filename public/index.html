@@ -1,0 +1,84 @@
+<!DOCTYPE html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>YoLeChat — Accueil</title>
+    <link rel="stylesheet" href="/home/styles.css" />
+  </head>
+  <body>
+    <header class="header">
+      <nav class="nav">
+        <div class="brand clickable" role="link" tabindex="0" aria-label="Aller à la page d’accueil" data-goto="/">YoLeChat</div>
+        </nav>
+    </header>
+
+    <main class="container auth">
+      <section class="auth-toggle">
+        <div class="hero-actions">
+          <button type="button" class="btn primary hero-btn" data-tab="register">S'inscrire</button>
+          <button type="button" class="btn outline hero-btn" data-tab="login">Se connecter</button>
+        </div>
+      </section>
+
+      <section class="tabs">
+        <div id="register" class="tab active">
+          <h2>Créer un compte</h2>
+          <form id="registerForm" class="form" autocomplete="off">
+            <div class="field">
+              <label>Nom d'utilisateur</label>
+              <input type="text" name="username" minlength="3" required placeholder="ex: alice" />
+            </div>
+            <div class="field">
+              <label>Mot de passe</label>
+              <input type="password" name="password" minlength="6" required placeholder="min. 6 caractères" />
+            </div>
+            <div class="field">
+              <label>Couleur d'affichage (optionnel)</label>
+              <input type="text" name="displayColor" placeholder="#44cc88" />
+              <div class="swatch-row">
+                <div class="swatches" role="list" aria-label="Nuancier">
+                  <button type="button" class="swatch" role="listitem" data-color="#4f7cfb" style="--c:#4f7cfb" aria-label="Bleu"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#50c878" style="--c:#50c878" aria-label="Vert"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#ff6b6b" style="--c:#ff6b6b" aria-label="Rouge"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#f5a623" style="--c:#f5a623" aria-label="Orange"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#9b59b6" style="--c:#9b59b6" aria-label="Violet"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#00bcd4" style="--c:#00bcd4" aria-label="Cyan"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#2ecc71" style="--c:#2ecc71" aria-label="Émeraude"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#34495e" style="--c:#34495e" aria-label="Gris bleuté"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#e74c3c" style="--c:#e74c3c" aria-label="Rouge sombre"></button>
+                  <button type="button" class="swatch" role="listitem" data-color="#f1c40f" style="--c:#f1c40f" aria-label="Jaune"></button>
+                </div>
+                <div class="picker">
+                  <input type="color" id="colorPicker" value="#4f7cfb" aria-label="Choisir une couleur" />
+                </div>
+              </div>
+            </div>
+            <button type="submit" class="btn primary">S'inscrire</button>
+          </form>
+        </div>
+
+        <div id="login" class="tab">
+          <h2>Se connecter</h2>
+          <form id="loginForm" class="form" autocomplete="off">
+            <div class="field">
+              <label>Nom d'utilisateur</label>
+              <input type="text" name="username" required placeholder="ex: Erkant" />
+            </div>
+            <div class="field">
+              <label>Mot de passe</label>
+              <input type="password" name="password" required placeholder="Votre mot de passe" />
+            </div>
+            <button type="submit" class="btn primary">Se connecter</button>
+          </form>
+        </div>
+      </section>
+
+      <section id="feedback" class="feedback" aria-live="polite"></section>
+    </main>
+
+    <footer class="footer"></footer>
+
+    <script src="/home/app.js" defer></script>
+  </body>
+  </html>

@@ -14,9 +14,15 @@ describe('AppController', () => {
     appController = app.get<AppController>(AppController);
   });
 
-  describe('root', () => {
-    it('should return "Hello World!"', () => {
-      expect(appController.getHello()).toBe('Hello World!');
-    });
+  it('GET / renders HTML landing', () => {
+    const res: any = {
+      type: jest.fn().mockReturnThis(),
+      send: jest.fn(),
+    };
+    appController.getLanding(res);
+    expect(res.type).toHaveBeenCalledWith('html');
+    const html = res.send.mock.calls[0][0];
+    expect(typeof html).toBe('string');
+    expect(html).toContain('Prêt à tchater ?');
   });
 });
