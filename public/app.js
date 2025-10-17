@@ -124,6 +124,7 @@
       const { accessToken } = await postJson(`${apiBase}/auth/login`, dto);
       localStorage.setItem('token', accessToken);
       feedback.innerHTML = '<span class="ok">Connecté ✔</span>';
+      window.location.assign('/chat');
     } catch (err) {
       feedback.innerHTML = `<span class="err">${err.message}</span>`;
     }

@@ -7,6 +7,7 @@ import { UsersModule } from './users/users.module';
 import { RealtimeModule } from './realtime/realtime.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { ChatModule } from './chat/chat.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { AppService } from './app.service';
     AuthModule,
     UsersModule,
     RealtimeModule,
+    ChatModule,
   ],
   controllers: [AppController],
   providers: [AppService],

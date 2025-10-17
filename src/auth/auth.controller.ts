@@ -1,6 +1,7 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post, Res } from '@nestjs/common';
 import { IsOptional, IsString, MinLength, Matches } from 'class-validator';
 import { AuthService } from './auth.service';
+import type { Response } from 'express';
 
 class RegisterDto {
   @IsString()
@@ -29,12 +30,26 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   @Post('register')
-  register(@Body() dto: RegisterDto) {
-    return this.authService.register(dto);
+  async register(@Res({ passthrough: true }) res: Response, @Body() dto: RegisterDto) {
+    const result = await this.authService.register(dto);
+    res.cookie('access_token', result.accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      maxAge: 60 * 60 * 1000,
+    });
+    return result;
   }
 
   @Post('login')
-  login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+  async login(@Res({ passthrough: true }) res: Response, @Body() dto: LoginDto) {
+    const result = await this.authService.login(dto);
+    res.cookie('access_token', result.accessToken, {
+      httpOnly: true,
+      sameSite: 'lax',
+      secure: false,
+      maxAge: 60 * 60 * 1000,
+    });
+    return result;
   }
 }
