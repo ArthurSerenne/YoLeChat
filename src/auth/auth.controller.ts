@@ -52,4 +52,10 @@ export class AuthController {
     });
     return result;
   }
+
+  @Post('logout')
+  async logout(@Res({ passthrough: true }) res: Response) {
+    res.clearCookie('access_token', { httpOnly: true, sameSite: 'lax', secure: false });
+    return { status: 'ok' };
+  }
 }

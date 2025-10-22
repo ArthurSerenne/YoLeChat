@@ -16,6 +16,32 @@ model User {
   messages     Message[]
   reactions    Reaction[]
   memberships  RoomMember[]
+  serverMemberships ServerMember[]
+  ownedServers Server[] @relation("ServerOwner")
+}
+
+model Server {
+  id        String   @id @default(cuid())
+  name      String
+  owner     User     @relation("ServerOwner", fields: [ownerId], references: [id])
+  ownerId   String
+  createdAt DateTime @default(now())
+  members   ServerMember[]
+  rooms     Room[]
+
+  @@index([name])
+}
+
+model ServerMember {
+  id        String   @id @default(cuid())
+  server    Server   @relation(fields: [serverId], references: [id])
+  serverId  String
+  user      User     @relation(fields: [userId], references: [id])
+  userId    String
+  role      String   @default("member")
+  joinedAt  DateTime @default(now())
+
+  @@unique([serverId, userId])
 }
 
 model Room {
@@ -26,6 +52,10 @@ model Room {
   createdAt   DateTime    @default(now())
   messages    Message[]
   memberships RoomMember[]
+  server      Server?     @relation(fields: [serverId], references: [id])
+  serverId    String?
+
+  @@index([serverId, name])
 }
 
 model RoomMember {

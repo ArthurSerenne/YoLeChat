@@ -8,10 +8,11 @@ import { RealtimeModule } from './realtime/realtime.module';
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ChatModule } from './chat/chat.module';
+import { ServersModule } from './servers/servers.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, envFilePath: ['env', '.env'] }),
     ServeStaticModule.forRoot({
       rootPath: join(__dirname, '..', 'public'),
       serveRoot: '/home',
@@ -20,6 +21,7 @@ import { ChatModule } from './chat/chat.module';
     UsersModule,
     RealtimeModule,
     ChatModule,
+    ServersModule,
   ],
   controllers: [AppController],
   providers: [AppService],

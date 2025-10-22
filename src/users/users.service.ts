@@ -24,4 +24,18 @@ export class UsersService {
       select: { id: true, username: true, displayColor: true },
     });
   }
+
+  searchUsers(query: string, take: number, requesterId: string) {
+    return this.prisma.user.findMany({
+      where: {
+        AND: [
+          { username: { contains: query } },
+          { id: { not: requesterId } },
+        ],
+      },
+      select: { id: true, username: true, displayColor: true },
+      orderBy: { username: 'asc' },
+      take,
+    });
+  }
 }
