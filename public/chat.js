@@ -247,12 +247,13 @@ function startTyping() {
   }, 2500);
 }
 
-if (!users || !currentUser) { typingEl.textContent = ''; return; }
-const others = users.filter(u => u !== currentUser.username);
-if (others.length === 0) { typingEl.textContent = ''; return; }
+socket.on('typing.update', ({ users }) => {
+  if (!users || !currentUser) { typingEl.textContent = ''; return; }
+  const others = users.filter(u => u !== currentUser.username);
+  if (others.length === 0) { typingEl.textContent = ''; return; }
 
-const label = others.length === 1 ? `${others[0]} écrit…` : `${others.join(', ')} écrivent…`;
-typingEl.textContent = label;
+  const label = others.length === 1 ? `${others[0]} écrit…` : `${others.join(', ')} écrivent…`;
+  typingEl.textContent = label;
 });
 
 formEl.addEventListener('submit', e => {
@@ -605,8 +606,53 @@ if (modalCloseBtn) {
     closeCreateServerModal();
   });
 }
-if (modalEl) {
-  modalEl.addEventListener('click', (e) => {
-    if (e.target === modalEl) closeCreateServerModal();
+
+const createInvitesInput = document.getElementById('createInvitesInput');
+const createServerSuggestions = document.getElementById('createServerSuggestions');
+let createInviteTimer;
+let createInviteCtrl;
+
+if (createInvitesInput && createServerSuggestions) {
+  createInvitesInput.addEventListener('input', () => {
+    const val = createInvitesInput.value;
+    const parts = val.split(',');
+    const lastPart = parts[parts.length - 1].trim();
+
+    clearTimeout(createInviteTimer);
+    createServerSuggestions.innerHTML = '';
+
+    if (lastPart.length < 2) return;
+
+    createInviteTimer = setTimeout(async () => {
+      try {
+        if (createInviteCtrl) createInviteCtrl.abort();
+        createInviteCtrl = new AbortController();
+        const res = await fetch(`/users/search?q=${encodeURIComponent(lastPart)}&limit=5`, { credentials: 'same-origin', signal: createInviteCtrl.signal });
+        const list = await res.json().catch(() => []);
+
+        createServerSuggestions.innerHTML = '';
+        list.forEach(u => {
+          const li = document.createElement('li');
+          const color = u.displayColor || '#e6e9ef';
+          li.innerHTML = `<span class="presence" style="background:${color}"></span><span class="username" style="color:${color}">${u.username}</span>`;
+
+          li.addEventListener('click', () => {
+            // Replace last part with username
+            parts[parts.length - 1] = ' ' + u.username;
+            createInvitesInput.value = parts.join(',') + ', ';
+            createServerSuggestions.innerHTML = '';
+            createInvitesInput.focus();
+          });
+          createServerSuggestions.appendChild(li);
+        });
+      } catch { }
+    }, 250);
+  });
+
+  // Close suggestions on click outside
+  document.addEventListener('click', (e) => {
+    if (!createInvitesInput.contains(e.target) && !createServerSuggestions.contains(e.target)) {
+      createServerSuggestions.innerHTML = '';
+    }
   });
 }

@@ -262,7 +262,8 @@ export class AppController {
               </div>
               <div class="field">
                 <label>Invitations (noms d’utilisateur séparés par des virgules)</label>
-                <input type="text" name="invites" placeholder="ex: alice, bob, charlie" />
+                <input type="text" id="createInvitesInput" name="invites" placeholder="ex: alice, bob, charlie" autocomplete="off" />
+                <ul id="createServerSuggestions" class="users"></ul>
               </div>
               <div class="modal-actions">
                 <button type="button" class="btn outline" id="createServerCancel">Annuler</button>

