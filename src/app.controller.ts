@@ -95,7 +95,7 @@ export class AppController {
           }
           .sidebar-title { margin: 4px 0 10px; font-size: 14px; color: var(--text-300); letter-spacing: .2px; }
           .users { list-style: none; margin: 0; padding: 0; display: flex; flex-direction: column; gap: 6px; flex: 1 1 auto; overflow: auto; }
-          .sidebar-actions { margin-top: auto; display: grid; gap: 8px; }
+          .sidebar-actions { display: grid; gap: 8px; flex-shrink: 0; padding-bottom: 10px; }
           .sidebar-actions .btn { width: 100%; display: flex; font-family: 'Mochiy Pop One', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-weight: 500; }
           .users li { display:flex; align-items:center; gap: 10px; padding: 6px 8px; border-radius: 8px; }
           .users li:hover { background: rgba(35,42,55,0.5); }
@@ -139,6 +139,16 @@ export class AppController {
           #typing { min-height: 18px; color: var(--text-300); }
           #feedback { min-height: 18px; font-size: 14px; color: #ff6b6b; }
           .serverbar { position: sticky; top: 0; z-index: 2; height: var(--serverbar-h); background: var(--bg-800); border-bottom: 1px solid var(--border-600); padding: 8px 12px; box-sizing: border-box; display: flex; align-items: center; gap: 10px; }
+          
+          /* Reactions */
+          .msg-container { display: flex; flex-direction: column; gap: 2px; }
+          .reactions { display: flex; gap: 4px; margin-top: 2px; flex-wrap: wrap; }
+          .reaction-pill { background: var(--bg-700); border: 1px solid var(--border-600); padding: 2px 6px; border-radius: 12px; font-size: 12px; cursor: pointer; display: flex; align-items: center; gap: 4px; }
+          .reaction-pill:hover { background: var(--bg-600); border-color: var(--accent-500); }
+          .add-reaction { opacity: 0; background: none; border: none; color: var(--text-300); cursor: pointer; padding: 0 4px; font-size: 14px; transition: opacity 0.2s; }
+          .msg:hover .add-reaction { opacity: 1; }
+          .add-reaction:hover { color: var(--accent-500); }
+
           .server-name { font-family: 'Mochiy Pop One', system-ui, -apple-system, Segoe UI, Roboto, Helvetica, Arial, sans-serif; font-weight: 600; }
           .modal { position: fixed; inset: 0; display: none; align-items: center; justify-content: center; background: rgba(0,0,0,0.6); z-index: 20; }
           .modal.show { display: flex; }
@@ -151,6 +161,23 @@ export class AppController {
           .toast { background: var(--bg-800); border: 1px solid var(--border-600); color: var(--text-100); padding: 10px 12px; border-radius: 8px; box-shadow: 0 6px 30px rgba(0,0,0,0.4); }
           .toast.ok { border-color: var(--accent-600); }
           .toast.err { border-color: #d45555; }
+
+          /* User Profile Section */
+          .user-profile { border-top: 1px solid var(--border-600); padding-top: 10px; display: flex; align-items: center; gap: 10px; flex-shrink: 0; }
+
+          .user-avatar { width: 32px; height: 32px; border-radius: 50%; background: var(--bg-700); border: 2px solid var(--border-600); display:grid; place-items:center; font-weight:bold; color:var(--text-100); }
+          .user-info { flex: 1; min-width: 0; }
+          .user-name { font-family: 'Mochiy Pop One', system-ui; font-size: 14px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+          .user-status { font-size: 11px; color: var(--text-300); }
+          .btn-icon { background: none; border: none; color: var(--text-300); cursor: pointer; padding: 4px; border-radius: 4px; }
+          .btn-icon:hover { color: var(--text-100); background: var(--bg-700); }
+
+          /* Color Input */
+          .color-input-wrapper { display: flex; align-items: center; gap: 8px; }
+          input[type="color"] { -webkit-appearance: none; border: none; width: 32px; height: 32px; padding: 0; background: none; cursor: pointer; }
+          input[type="color"]::-webkit-color-swatch-wrapper { padding: 0; }
+          input[type="color"]::-webkit-color-swatch { border: 1px solid var(--border-600); border-radius: 50%; }
+
         </style>
       </head>
       <body>
@@ -180,6 +207,17 @@ export class AppController {
                </button>
                <button id="clearBtn" class="btn danger" type="button">Vider l’historique</button>
                <button id="logoutBtn" class="btn outline" type="button">Se déconnecter</button>
+             </div>
+
+             <div id="userProfile" class="user-profile">
+               <div id="myAvatar" class="user-avatar">?</div>
+               <div class="user-info">
+                 <div id="myUsername" class="user-name">Chargement...</div>
+                 <div class="user-status">En ligne</div>
+               </div>
+               <button id="editProfileBtn" class="btn-icon" title="Modifier mon profil">
+                 <svg width="16" height="16" fill="currentColor" viewBox="0 0 16 16"><path d="M12.146.146a.5.5 0 0 1 .708 0l3 3a.5.5 0 0 1 0 .708l-10 10a.5.5 0 0 1-.168.11l-5 2a.5.5 0 0 1-.65-.65l2-5a.5.5 0 0 1 .11-.168l10-10zM11.207 2.5 13.5 4.793 14.793 3.5 12.5 1.207 11.207 2.5zm1.586 3L10.5 3.207 4 9.707V10h.5a.5.5 0 0 1 .5.5v.5h.5a.5.5 0 0 1 .5.5v.5h.293l6.5-6.5zm-9.761 5.175-.106.106-1.528 3.821 3.821-1.528.106-.106A.5.5 0 0 1 5 12.5V12h-.5a.5.5 0 0 1-.5-.5V11h-.5a.5.5 0 0 1-.468-.325z"/></svg>
+               </button>
              </div>
            </aside>
           <section class="channel" aria-label="Messages">
@@ -254,6 +292,33 @@ export class AppController {
             </form>
           </div>
         </div>
+        <div id="profileModal" class="modal" aria-hidden="true">
+          <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="profileTitle">
+            <div class="modal-header">
+              <h3 id="profileTitle" class="modal-title">Mon Profil</h3>
+              <button type="button" class="btn outline" id="profileClose">Fermer</button>
+            </div>
+            <form id="profileForm" class="form" autocomplete="off">
+              <div class="field">
+                <label>Pseudo</label>
+                <input type="text" name="username" minlength="3" required />
+              </div>
+              <div class="field">
+                <label>Couleur (Hex ou sélecteur)</label>
+                <div class="color-input-wrapper">
+                   <input type="color" id="colorPicker" />
+                   <input type="text" name="displayColor" id="colorText" pattern="^#([0-9a-fA-F]{3}|[0-9a-fA-F]{6})$" placeholder="#48ad16" />
+                </div>
+              </div>
+              <div class="modal-actions">
+                <button type="button" class="btn outline" id="profileCancel">Annuler</button>
+                <button type="submit" class="btn primary">Enregistrer</button>
+              </div>
+              <div id="profileFeedback" class="feedback" aria-live="polite"></div>
+            </form>
+          </div>
+        </div>
+
         <div id="toastContainer" class="toasts" aria-live="polite" aria-atomic="true"></div>
 
         <script src="/home/chat.js"></script>

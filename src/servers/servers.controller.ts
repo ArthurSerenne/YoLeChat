@@ -4,7 +4,7 @@ import { ServersService } from './servers.service';
 
 @Controller('servers')
 export class ServersController {
-  constructor(private readonly servers: ServersService) {}
+  constructor(private readonly servers: ServersService) { }
 
   @UseGuards(AuthGuard('jwt'))
   @Post()

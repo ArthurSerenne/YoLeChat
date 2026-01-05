@@ -52,17 +52,81 @@ function renderMessage(m) {
   const authorId = m.author?.id || null;
   const isGroupStart = messagesEl.children.length > 0 && lastAuthorId !== authorId;
   if (isGroupStart) li.classList.add('group-start');
-  li.innerHTML = `<div class="msg"><span class="author" style="color:${color}">${name}</span> <span class="content">${m.content}</span></div>`;
+
+  // Container
+  const container = document.createElement('div');
+  container.className = 'msg-container';
+  li.appendChild(container);
+
+  // Message body
+  const body = document.createElement('div');
+  body.className = 'msg';
+  body.innerHTML = `<span class="author" style="color:${color}">${name}</span> <span class="content">${m.content}</span> <button class="add-reaction" title="Ajouter une réaction" onclick="addReaction('${m.id}')">+</button>`;
+  container.appendChild(body);
+
+  // Reactions
+  const reactionsEl = document.createElement('div');
+  reactionsEl.className = 'reactions';
+  reactionsEl.id = `reactions-${m.id}`;
+  container.appendChild(reactionsEl);
+
+  if (m.reactions && Array.isArray(m.reactions)) {
+    // Group by emoji
+    const counts = {};
+    m.reactions.forEach(r => {
+      counts[r.emoji] = (counts[r.emoji] || 0) + 1;
+    });
+    Object.entries(counts).forEach(([emoji, count]) => {
+      addReactionToUi(m.id, emoji, count, false);
+    });
+  }
+
   messagesEl.appendChild(li);
   lastAuthorId = authorId;
+  messagesEl.scrollTop = messagesEl.scrollHeight;
 }
+
+function addReaction(msgId) {
+  const emoji = prompt('Entrez un émoji (ex: 👍, ❤️, 😂):');
+  if (!emoji) return;
+  socket.emit('message.react', { messageId: msgId, emoji }, (res) => {
+    if (res && res.status !== 'ok') {
+      showToast('Erreur réaction', 'err');
+    }
+  });
+}
+
+function addReactionToUi(msgId, emoji, count = 1, append = true) {
+  const container = document.getElementById(`reactions-${msgId}`);
+  if (!container) return;
+
+  // Check if pill exists
+  let pill = Array.from(container.children).find(c => c.dataset.emoji === emoji);
+  if (pill) {
+    const countSpan = pill.querySelector('.count');
+    if (countSpan) {
+      const current = parseInt(countSpan.textContent) || 0;
+      countSpan.textContent = append ? current + 1 : count; // logic simplified
+    }
+  } else {
+    pill = document.createElement('span');
+    pill.className = 'reaction-pill';
+    pill.dataset.emoji = emoji;
+    pill.innerHTML = `${emoji} <span class="count">${count}</span>`;
+    container.appendChild(pill);
+  }
+}
+
+socket.on('message.reaction.new', ({ messageId, emoji }) => {
+  addReactionToUi(messageId, emoji, 1, true);
+});
 
 function openCreateServerModal() {
   if (!modalEl || !modalForm) return;
   modalEl.classList.add('show');
   modalEl.setAttribute('aria-hidden', 'false');
   modalFeedbackEl && (modalFeedbackEl.textContent = '');
-  try { modalForm.reset(); } catch {}
+  try { modalForm.reset(); } catch { }
   const nameInput = modalForm.querySelector('input[name="name"]');
   if (nameInput) nameInput.focus();
 }
@@ -158,8 +222,12 @@ function startTyping() {
 }
 
 socket.on('typing.update', ({ users }) => {
-  if (!users || users.length === 0) { typingEl.textContent = ''; return; }
-  const label = users.length === 1 ? `${users[0]} écrit…` : `${users.join(', ')} écrivent…`;
+  if (!users || !currentUser) { typingEl.textContent = ''; return; }
+  // Filter out self
+  const others = users.filter(u => u !== currentUser.username);
+  if (others.length === 0) { typingEl.textContent = ''; return; }
+
+  const label = others.length === 1 ? `${others[0]} écrit…` : `${others.join(', ')} écrivent…`;
   typingEl.textContent = label;
 });
 
@@ -224,7 +292,7 @@ if (modalForm) {
               credentials: 'same-origin',
             });
             await res.json().catch(() => ({}));
-          } catch {}
+          } catch { }
         }
       }
       closeCreateServerModal();
@@ -240,8 +308,8 @@ if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
     try {
       await fetch('/auth/logout', { method: 'POST' });
-    } catch (e) {}
-    try { socket.disconnect(); } catch {}
+    } catch (e) { }
+    try { socket.disconnect(); } catch { }
     window.location.assign('/home?tab=login');
   });
 }
@@ -255,14 +323,150 @@ if (toggleBtn && chatContainer) {
     toggleBtn.setAttribute('title', label);
   });
 }
- 
+
+// Profile UI Elements
+const myAvatarEl = document.getElementById('myAvatar');
+const myUsernameEl = document.getElementById('myUsername');
+const editProfileBtn = document.getElementById('editProfileBtn');
+const profileModal = document.getElementById('profileModal');
+const profileForm = document.getElementById('profileForm');
+const profileFeedback = document.getElementById('profileFeedback');
+const profileClose = document.getElementById('profileClose');
+const profileCancel = document.getElementById('profileCancel');
+const colorPicker = document.getElementById('colorPicker');
+const colorText = document.getElementById('colorText');
+
+let currentUser = null;
+
+async function loadMe() {
+  try {
+    const res = await fetch('/users/me', { credentials: 'same-origin' });
+    if (!res.ok) return;
+    const user = await res.json();
+    currentUser = user;
+    if (myUsernameEl) myUsernameEl.textContent = user.username;
+    if (myAvatarEl) {
+      myAvatarEl.style.backgroundColor = user.displayColor || 'var(--bg-700)';
+      myAvatarEl.textContent = (user.username || '?').charAt(0).toUpperCase();
+      myAvatarEl.style.color = getContrastColor(user.displayColor || '#12161c');
+    }
+  } catch { }
+}
+
+function getContrastColor(hex) {
+  // Simple logic to pick black or white text based on background
+  hex = hex.replace('#', '');
+  if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
+  const r = parseInt(hex.substr(0, 2), 16);
+  const g = parseInt(hex.substr(2, 2), 16);
+  const b = parseInt(hex.substr(4, 2), 16);
+  const yiq = ((r * 299) + (g * 587) + (b * 114)) / 1000;
+  return (yiq >= 128) ? '#000000' : '#ffffff';
+}
+
+// Profile Modal Logic
+function openProfileModal() {
+  if (!profileModal || !currentUser) return;
+  profileModal.classList.add('show');
+  profileModal.setAttribute('aria-hidden', 'false');
+  profileFeedback.textContent = '';
+  // Fill form
+  const nameInput = profileForm.querySelector('input[name="username"]');
+  if (nameInput) nameInput.value = currentUser.username;
+  if (colorText) colorText.value = currentUser.displayColor;
+  if (colorPicker) colorPicker.value = currentUser.displayColor || '#000000';
+}
+function closeProfileModal() {
+  if (!profileModal) return;
+  profileModal.classList.remove('show');
+  profileModal.setAttribute('aria-hidden', 'true');
+}
+
+if (editProfileBtn) editProfileBtn.addEventListener('click', openProfileModal);
+if (profileClose) profileClose.addEventListener('click', closeProfileModal);
+if (profileCancel) profileCancel.addEventListener('click', closeProfileModal);
+if (profileModal) profileModal.addEventListener('click', (e) => { if (e.target === profileModal) closeProfileModal(); });
+if (colorPicker && colorText) {
+  colorPicker.addEventListener('input', (e) => { colorText.value = e.target.value; });
+  colorText.addEventListener('input', (e) => {
+    const v = e.target.value;
+    if (/^#([0-9a-f]{3}|[0-9a-f]{6})$/i.test(v)) colorPicker.value = v;
+  });
+}
+
+if (profileForm) {
+  profileForm.addEventListener('submit', async (e) => {
+    e.preventDefault();
+    profileFeedback.textContent = '';
+    const formData = new FormData(profileForm);
+    const username = formData.get('username').trim();
+    const displayColor = formData.get('displayColor').trim();
+
+    try {
+      const res = await fetch('/users/me', {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ username, displayColor }),
+        credentials: 'same-origin'
+      });
+      if (res.ok) {
+        showToast('Profil mis à jour !', 'ok');
+        closeProfileModal();
+        await loadMe();
+        // Socket should handle update naturally or we might need to reconnect to refresh identity in socket?
+        // Actually socket.data.user is set on connection... 
+        // Ideally we might want to re-auth or emit an update.
+        // For now, page reload is simple user instruction, but let's try to just update local UI.
+      } else {
+        profileFeedback.textContent = 'Erreur lors de la mise à jour.';
+      }
+    } catch {
+      profileFeedback.textContent = 'Erreur réseau.';
+    }
+  });
+}
+
 updateServerTitle();
 loadServers();
 loadHistory();
+loadMe();
 
 if (createServerBtn) {
   createServerBtn.addEventListener('click', () => {
     openCreateServerModal();
+  });
+}
+
+if (inputEl) {
+  inputEl.addEventListener('input', () => {
+    startTyping();
+  });
+  inputEl.addEventListener('keydown', (e) => {
+    if (e.key === 'Enter' && !e.shiftKey) {
+      e.preventDefault();
+      // Trigger submit
+      const event = new Event('submit', { cancelable: true });
+      formEl.dispatchEvent(event);
+    }
+  });
+}
+
+if (clearBtn) {
+  clearBtn.addEventListener('click', async () => {
+    if (!confirm('Voulez-vous vraiment effacer tout l’historique de ce salon ?')) return;
+    try {
+      const url = serverId ? `/chat/messages?server=${encodeURIComponent(serverId)}` : '/chat/messages';
+      const res = await fetch(url, { method: 'DELETE', credentials: 'same-origin' });
+      const data = await res.json().catch(() => ({}));
+      if (res.ok && data.status === 'ok') {
+        messagesEl.innerHTML = '';
+        showToast('Historique effacé.', 'ok');
+      } else {
+        showToast('Impossible d’effacer (Permissions ?)', 'err');
+      }
+    } catch {
+      showToast('Erreur réseau.', 'err');
+    }
   });
 }
 
@@ -274,7 +478,7 @@ function openInviteModal() {
   inviteModalEl.classList.add('show');
   inviteModalEl.setAttribute('aria-hidden', 'false');
   inviteFeedbackEl && (inviteFeedbackEl.textContent = serverId ? '' : 'Sélectionnez un serveur pour inviter.');
-  try { inviteForm.reset(); } catch {}
+  try { inviteForm.reset(); } catch { }
   if (inviteInputEl) inviteInputEl.focus();
 }
 function closeInviteModal() {
@@ -321,7 +525,7 @@ if (inviteInputEl) {
           });
           inviteSuggestionsEl.appendChild(li);
         });
-      } catch {}
+      } catch { }
     }, 250);
   });
   inviteInputEl.addEventListener('keydown', (e) => {
@@ -369,9 +573,9 @@ async function inviteUser(username) {
     const code = data?.code || 'error';
     const msg = code === 'forbidden' ? 'Vous n’avez pas les droits.'
       : code === 'user_not_found' ? 'Utilisateur introuvable.'
-      : code === 'not_found' ? 'Serveur introuvable.'
-      : code === 'already_member' ? 'Déjà membre'
-      : 'Invitation échouée.';
+        : code === 'not_found' ? 'Serveur introuvable.'
+          : code === 'already_member' ? 'Déjà membre'
+            : 'Invitation échouée.';
     inviteFeedbackEl && (inviteFeedbackEl.textContent = msg);
     if (code === 'already_member') showToast('Déjà membre', 'err');
   } catch {

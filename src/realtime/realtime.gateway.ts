@@ -8,7 +8,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
   @WebSocketServer()
   server: Server;
 
-  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) {}
+  constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) { }
 
   private typingTimeouts = new Map<string, NodeJS.Timeout>(); // key: `${serverKey}:${userId}`
   private onlineByServer = new Map<string, Set<string>>(); // key: serverKey -> Set<userId>
@@ -86,6 +86,26 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
     }
   }
 
+  @SubscribeMessage('message.react')
+  async handleMessageReact(@ConnectedSocket() socket: Socket, @MessageBody() payload: any) {
+    try {
+      const u = socket.data.user;
+      if (!u) return { status: 'error', error: 'unauthorized' };
+      const { messageId, emoji } = payload || {};
+      if (!messageId || !emoji) return { status: 'error', error: 'invalid_payload' };
+
+      await this.prisma.reaction.create({
+        data: { messageId, userId: u.id, emoji },
+      });
+
+      const roomName = this.serverKey(socket.data.serverId);
+      this.server.to(roomName).emit('message.reaction.new', { messageId, emoji });
+      return { status: 'ok' };
+    } catch (e) {
+      return { status: 'error', error: 'react_failed' };
+    }
+  }
+
   handleDisconnect(socket: Socket) {
     try {
       const u = socket.data.user;
@@ -93,9 +113,9 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       const set = this.onlineByServer.get(roomName);
       if (u?.id && set) {
         set.delete(u.id);
-        this.broadcastPresence(roomName).catch(() => {});
+        this.broadcastPresence(roomName).catch(() => { });
       }
-    } catch {}
+    } catch { }
   }
 
   @SubscribeMessage('typing.start')
@@ -109,10 +129,10 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       if (existing) clearTimeout(existing);
       const t = setTimeout(() => {
         this.typingTimeouts.delete(key);
-        this.broadcastTyping(roomName).catch(() => {});
+        this.broadcastTyping(roomName).catch(() => { });
       }, 3000);
       this.typingTimeouts.set(key, t);
-      this.broadcastTyping(roomName).catch(() => {});
+      this.broadcastTyping(roomName).catch(() => { });
       return { status: 'ok' };
     } catch {
       return { status: 'error', error: 'typing_failed' };
@@ -129,7 +149,7 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
       const existing = this.typingTimeouts.get(key);
       if (existing) clearTimeout(existing);
       this.typingTimeouts.delete(key);
-      this.broadcastTyping(roomName).catch(() => {});
+      this.broadcastTyping(roomName).catch(() => { });
       return { status: 'ok' };
     } catch {
       return { status: 'error', error: 'typing_failed' };

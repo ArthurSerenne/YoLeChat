@@ -4,7 +4,7 @@ import { RealtimeGateway } from '../realtime/realtime.gateway';
 
 @Injectable()
 export class ServersService implements OnModuleInit {
-  constructor(private readonly prisma: PrismaService, private readonly realtime: RealtimeGateway) {}
+  constructor(private readonly prisma: PrismaService, private readonly realtime: RealtimeGateway) { }
 
   async onModuleInit() {
     try {
@@ -17,7 +17,7 @@ export class ServersService implements OnModuleInit {
           await this.prisma.serverMember.create({ data: { serverId: s.id, userId: erkant.id, role: 'admin' } });
         }
       }
-    } catch {}
+    } catch { }
   }
 
   async createServer(ownerId: string, name: string) {
@@ -38,7 +38,7 @@ export class ServersService implements OnModuleInit {
         const existing = await this.prisma.serverMember.findUnique({ where: { serverId_userId: { serverId: server.id, userId: erkant.id } } });
         if (!existing) await this.prisma.serverMember.create({ data: { serverId: server.id, userId: erkant.id, role: 'admin' } });
       }
-    } catch {}
+    } catch { }
     return server;
   }
 
@@ -78,7 +78,7 @@ export class ServersService implements OnModuleInit {
     // Émet un événement ciblé pour mettre à jour la liste côté invité
     try {
       this.realtime.server.to(`user:${user.id}`).emit('server.added', { id: server.id, name: server.name });
-    } catch {}
+    } catch { }
 
     return membership;
   }
