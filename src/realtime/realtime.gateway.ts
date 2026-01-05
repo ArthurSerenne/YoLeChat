@@ -10,8 +10,8 @@ export class RealtimeGateway implements OnGatewayConnection, OnGatewayDisconnect
 
   constructor(private readonly prisma: PrismaService, private readonly jwt: JwtService) { }
 
-  private typingTimeouts = new Map<string, NodeJS.Timeout>(); // key: `${serverKey}:${userId}`
-  private onlineByServer = new Map<string, Set<string>>(); // key: serverKey -> Set<userId>
+  private typingTimeouts = new Map<string, NodeJS.Timeout>();
+  private onlineByServer = new Map<string, Set<string>>();
 
   private serverKey(serverId?: string | null) {
     return serverId ? `server:${serverId}:general` : 'general';

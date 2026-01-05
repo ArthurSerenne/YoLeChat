@@ -39,11 +39,20 @@ export class ChatService {
 
     const messages = await this.prisma.message.findMany({
       where: { roomId },
-      include: { author: { select: { id: true, username: true, displayColor: true } } },
+      include: {
+        author: { select: { id: true, username: true, displayColor: true } },
+        reactions: { select: { id: true, emoji: true, userId: true } },
+      },
       orderBy: { createdAt: 'asc' },
       take: n,
     });
-    return messages.map(m => ({ id: m.id, content: m.content, createdAt: m.createdAt, author: m.author }));
+    return messages.map(m => ({
+      id: m.id,
+      content: m.content,
+      createdAt: m.createdAt,
+      author: m.author,
+      reactions: m.reactions,
+    }));
   }
 
   async clearGeneralRoomMessages(userId: string, serverId: string | null) {

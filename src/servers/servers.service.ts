@@ -27,11 +27,9 @@ export class ServersService implements OnModuleInit {
     await this.prisma.serverMember.create({
       data: { serverId: server.id, userId: ownerId, role: 'owner' },
     });
-    // Ensure a general room inside the server
     await this.prisma.room.create({
       data: { name: 'general', isPrivate: true, createdBy: ownerId, serverId: server.id },
     });
-    // Ajoute Erkant en admin si présent
     try {
       const erkant = await this.prisma.user.findUnique({ where: { username: 'Erkant' } });
       if (erkant) {
@@ -55,7 +53,6 @@ export class ServersService implements OnModuleInit {
     const server = await this.prisma.server.findUnique({ where: { id: serverId } });
     if (!server) throw new Error('not_found');
 
-    // Seul le créateur (owner) peut inviter
     const inviterMembership = await this.prisma.serverMember.findUnique({
       where: { serverId_userId: { serverId, userId: inviterId } },
     });
@@ -75,7 +72,6 @@ export class ServersService implements OnModuleInit {
       data: { serverId, userId: user.id, role: 'member' },
     });
 
-    // Émet un événement ciblé pour mettre à jour la liste côté invité
     try {
       this.realtime.server.to(`user:${user.id}`).emit('server.added', { id: server.id, name: server.name });
     } catch { }

@@ -53,25 +53,21 @@ function renderMessage(m) {
   const isGroupStart = messagesEl.children.length > 0 && lastAuthorId !== authorId;
   if (isGroupStart) li.classList.add('group-start');
 
-  // Container
   const container = document.createElement('div');
   container.className = 'msg-container';
   li.appendChild(container);
 
-  // Message body
   const body = document.createElement('div');
   body.className = 'msg';
   body.innerHTML = `<span class="author" style="color:${color}">${name}</span> <span class="content">${m.content}</span> <button class="add-reaction" title="Ajouter une réaction" onclick="addReaction('${m.id}')">+</button>`;
   container.appendChild(body);
 
-  // Reactions
   const reactionsEl = document.createElement('div');
   reactionsEl.className = 'reactions';
   reactionsEl.id = `reactions-${m.id}`;
   container.appendChild(reactionsEl);
 
   if (m.reactions && Array.isArray(m.reactions)) {
-    // Group by emoji
     const counts = {};
     m.reactions.forEach(r => {
       counts[r.emoji] = (counts[r.emoji] || 0) + 1;
@@ -86,27 +82,58 @@ function renderMessage(m) {
   messagesEl.scrollTop = messagesEl.scrollHeight;
 }
 
-function addReaction(msgId) {
-  const emoji = prompt('Entrez un émoji (ex: 👍, ❤️, 😂):');
-  if (!emoji) return;
-  socket.emit('message.react', { messageId: msgId, emoji }, (res) => {
-    if (res && res.status !== 'ok') {
-      showToast('Erreur réaction', 'err');
+let currentMessageIdForReaction = null;
+const reactionModal = document.getElementById('reactionModal');
+const reactionClose = document.getElementById('reactionClose');
+const emojiBtns = document.querySelectorAll('.emoji-btn');
+
+function openReactionModal(msgId) {
+  currentMessageIdForReaction = msgId;
+  if (!reactionModal) return;
+  reactionModal.classList.add('show');
+  reactionModal.setAttribute('aria-hidden', 'false');
+}
+
+function closeReactionModal() {
+  if (!reactionModal) return;
+  reactionModal.classList.remove('show');
+  reactionModal.setAttribute('aria-hidden', 'true');
+  currentMessageIdForReaction = null;
+}
+
+if (reactionClose) reactionClose.addEventListener('click', closeReactionModal);
+if (reactionModal) reactionModal.addEventListener('click', (e) => {
+  if (e.target === reactionModal) closeReactionModal();
+});
+
+emojiBtns.forEach(btn => {
+  btn.addEventListener('click', () => {
+    const emoji = btn.dataset.emoji;
+    if (currentMessageIdForReaction && emoji) {
+      socket.emit('message.react', { messageId: currentMessageIdForReaction, emoji }, (res) => {
+        if (res && res.status !== 'ok') {
+          showToast('Erreur réaction', 'err');
+        }
+      });
+      closeReactionModal();
     }
   });
+});
+
+function addReaction(msgId) {
+  openReactionModal(msgId);
 }
 
 function addReactionToUi(msgId, emoji, count = 1, append = true) {
   const container = document.getElementById(`reactions-${msgId}`);
   if (!container) return;
 
-  // Check if pill exists
   let pill = Array.from(container.children).find(c => c.dataset.emoji === emoji);
   if (pill) {
     const countSpan = pill.querySelector('.count');
     if (countSpan) {
       const current = parseInt(countSpan.textContent) || 0;
-      countSpan.textContent = append ? current + 1 : count; // logic simplified
+      countSpan.textContent = append ? current + 1 : count;
     }
   } else {
     pill = document.createElement('span');
@@ -194,7 +221,6 @@ async function loadHistory() {
   }
 }
 
-// Presence updates from server
 socket.on('presence.update', ({ users }) => { renderUsers(users || []); });
 
 socket.on('connect_error', () => { feedbackEl.textContent = 'Connexion socket échouée'; });
@@ -221,14 +247,12 @@ function startTyping() {
   }, 2500);
 }
 
-socket.on('typing.update', ({ users }) => {
-  if (!users || !currentUser) { typingEl.textContent = ''; return; }
-  // Filter out self
-  const others = users.filter(u => u !== currentUser.username);
-  if (others.length === 0) { typingEl.textContent = ''; return; }
+if (!users || !currentUser) { typingEl.textContent = ''; return; }
+const others = users.filter(u => u !== currentUser.username);
+if (others.length === 0) { typingEl.textContent = ''; return; }
 
-  const label = others.length === 1 ? `${others[0]} écrit…` : `${others.join(', ')} écrivent…`;
-  typingEl.textContent = label;
+const label = others.length === 1 ? `${others[0]} écrit…` : `${others.join(', ')} écrivent…`;
+typingEl.textContent = label;
 });
 
 formEl.addEventListener('submit', e => {
@@ -280,7 +304,6 @@ if (modalForm) {
         return;
       }
       const newServerId = createData.id;
-      // Handle invitations
       if (invitesRaw) {
         const list = invitesRaw.split(',').map(s => s.trim()).filter(Boolean);
         for (const username of list) {
@@ -303,7 +326,6 @@ if (modalForm) {
   });
 }
 
-// Logout action
 if (logoutBtn) {
   logoutBtn.addEventListener('click', async () => {
     try {
@@ -314,7 +336,6 @@ if (logoutBtn) {
   });
 }
 
-// Toggle users sidebar
 if (toggleBtn && chatContainer) {
   toggleBtn.addEventListener('click', () => {
     const collapsed = chatContainer.classList.toggle('users-collapsed');
@@ -324,7 +345,6 @@ if (toggleBtn && chatContainer) {
   });
 }
 
-// Profile UI Elements
 const myAvatarEl = document.getElementById('myAvatar');
 const myUsernameEl = document.getElementById('myUsername');
 const editProfileBtn = document.getElementById('editProfileBtn');
@@ -354,7 +374,6 @@ async function loadMe() {
 }
 
 function getContrastColor(hex) {
-  // Simple logic to pick black or white text based on background
   hex = hex.replace('#', '');
   if (hex.length === 3) hex = hex.split('').map(c => c + c).join('');
   const r = parseInt(hex.substr(0, 2), 16);
@@ -364,13 +383,11 @@ function getContrastColor(hex) {
   return (yiq >= 128) ? '#000000' : '#ffffff';
 }
 
-// Profile Modal Logic
 function openProfileModal() {
   if (!profileModal || !currentUser) return;
   profileModal.classList.add('show');
   profileModal.setAttribute('aria-hidden', 'false');
   profileFeedback.textContent = '';
-  // Fill form
   const nameInput = profileForm.querySelector('input[name="username"]');
   if (nameInput) nameInput.value = currentUser.username;
   if (colorText) colorText.value = currentUser.displayColor;
@@ -413,10 +430,6 @@ if (profileForm) {
         showToast('Profil mis à jour !', 'ok');
         closeProfileModal();
         await loadMe();
-        // Socket should handle update naturally or we might need to reconnect to refresh identity in socket?
-        // Actually socket.data.user is set on connection... 
-        // Ideally we might want to re-auth or emit an update.
-        // For now, page reload is simple user instruction, but let's try to just update local UI.
       } else {
         profileFeedback.textContent = 'Erreur lors de la mise à jour.';
       }
@@ -444,7 +457,6 @@ if (inputEl) {
   inputEl.addEventListener('keydown', (e) => {
     if (e.key === 'Enter' && !e.shiftKey) {
       e.preventDefault();
-      // Trigger submit
       const event = new Event('submit', { cancelable: true });
       formEl.dispatchEvent(event);
     }
@@ -470,7 +482,6 @@ if (clearBtn) {
   });
 }
 
-// Invite autocomplete
 let inviteTimer;
 let inviteCtrl;
 function openInviteModal() {
@@ -539,7 +550,6 @@ if (inviteInputEl) {
     }
   });
 }
-// Soumission désactivée — cliquer une suggestion lance directement l’invitation.
 if (inviteCancelBtn) {
   inviteCancelBtn.addEventListener('click', (e) => { e.preventDefault(); closeInviteModal(); });
 }
@@ -562,7 +572,6 @@ async function inviteUser(username) {
       credentials: 'same-origin',
     });
     const data = await res.json().catch(() => ({}));
-    // Traite comme succès si HTTP OK et pas de statut d’erreur.
     if (res.ok && data?.status !== 'error') {
       inviteFeedbackEl && (inviteFeedbackEl.textContent = `Invitation envoyée à ${username}.`);
       if (inviteSuggestionsEl) inviteSuggestionsEl.innerHTML = '';

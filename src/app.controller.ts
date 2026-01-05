@@ -319,6 +319,21 @@ export class AppController {
           </div>
         </div>
 
+        <div id="reactionModal" class="modal" aria-hidden="true">
+          <div class="modal-dialog" role="dialog" aria-modal="true" aria-labelledby="reactionTitle">
+            <div class="modal-header">
+              <h3 id="reactionTitle" class="modal-title">Choisir une réaction</h3>
+              <button type="button" class="btn outline" id="reactionClose">Fermer</button>
+            </div>
+            <div class="emoji-grid">
+              <button type="button" class="emoji-btn" data-emoji="🔥" aria-label="Feu">🔥</button>
+              <button type="button" class="emoji-btn" data-emoji="👍" aria-label="Pouce">👍</button>
+              <button type="button" class="emoji-btn" data-emoji="❤️" aria-label="Cœur">❤️</button>
+              <button type="button" class="emoji-btn" data-emoji="💀" aria-label="Crâne">💀</button>
+            </div>
+          </div>
+        </div>
+
         <div id="toastContainer" class="toasts" aria-live="polite" aria-atomic="true"></div>
 
         <script src="/home/chat.js"></script>
